@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+set -e
+
+export RAILS_ENV=test
+
+echo "== Preparing test database =="
+bin/rails db:prepare
+
+echo "== Running specs =="
+bundle exec rspec

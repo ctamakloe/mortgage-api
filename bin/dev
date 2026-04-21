@@ -1,2 +1,4 @@
 #!/usr/bin/env ruby
+ENV["RAILS_ENV"] ||= "development"
+
 exec "./bin/rails", "server", *ARGV
