@@ -1,0 +1,11 @@
+services:
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile.devcontainer
+    environment:
+      RAILS_ENV: development
+    command: sleep infinity
+    user: root
+    volumes:
+      - .:/rails

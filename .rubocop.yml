@@ -1,8 +1,149 @@
-# Omakase Ruby styling for Rails
-inherit_gem: { rubocop-rails-omakase: rubocop.yml }
+require:
+  - rubocop-rails
+  - rubocop-performance
 
-# Overwrite or add rules to create your own house style
-#
-# # Use `[a, [b, c]]` not `[ a, [ b, c ] ]`
-# Layout/SpaceInsideArrayLiteralBrackets:
-#   Enabled: false
+AllCops:
+  NewCops: enable
+  TargetRubyVersion: 3.3
+  Exclude:
+    - "db/schema.rb"
+    - "bin/**/*"
+    - "vendor/**/*"
+    - "node_modules/**/*"
+
+# ── Layout ────────────────────────────────────────────────────
+Layout/IndentationWidth:
+  Width: 2
+
+Layout/IndentationConsistency:
+  EnforcedStyle: normal
+
+Layout/SpaceAroundOperators:
+  Enabled: true
+
+Layout/SpaceAfterComma:
+  Enabled: true
+
+Layout/SpaceBeforeFirstArg:
+  Enabled: true
+
+Layout/TrailingWhitespace:
+  Enabled: true
+
+Layout/TrailingEmptyLines:
+  Enabled: true
+
+Layout/EmptyLineBetweenDefs:
+  Enabled: true
+
+Layout/HashAlignment:
+  EnforcedHashRocketStyle: key
+  EnforcedColonStyle: key
+
+Layout/LineLength:
+  Max: 120
+  Exclude:
+    - "config/**/*"
+
+# ── Style ─────────────────────────────────────────────────────
+Style/StringLiterals:
+  EnforcedStyle: double_quotes
+
+Style/FrozenStringLiteralComment:
+  Enabled: false
+
+Style/SymbolArray:
+  EnforcedStyle: percent
+  MinSize: 3
+
+Style/WordArray:
+  EnforcedStyle: percent
+  MinSize: 3
+
+Style/TrailingCommaInArguments:
+  EnforcedStyleForMultiline: comma
+
+Style/TrailingCommaInArrayLiteral:
+  EnforcedStyleForMultiline: comma
+
+Style/TrailingCommaInHashLiteral:
+  EnforcedStyleForMultiline: comma
+
+Style/GuardClause:
+  Enabled: true
+
+Style/NegatedIf:
+  Enabled: true
+
+# ── Disabled (noise in Rails projects) ────────────────────────
+
+# Class/module names are self-documenting in Rails
+Style/Documentation:
+  Enabled: false
+
+# Migrations, seeds, and route files are legitimately long
+Metrics/BlockLength:
+  Enabled: false
+
+# Controller actions and service objects often need breathing room
+Metrics/MethodLength:
+  Max: 20
+
+Metrics/AbcSize:
+  Max: 30
+
+# `e` for rescue, `io`, `el` etc are widely understood shorthand
+Naming/MethodParameterName:
+  Enabled: false
+
+# update_column / update_all skip validations intentionally
+Rails/SkipsModelValidations:
+  Enabled: false
+
+# inverse_of is rarely needed with modern Rails auto-detection
+Rails/InverseOf:
+  Enabled: false
+
+# and/or for control flow is a legitimate Ruby idiom
+Style/AndOr:
+  Enabled: false
+
+# ── Naming ────────────────────────────────────────────────────
+Naming/VariableNumber:
+  EnforcedStyle: snake_case
+
+# ── Metrics ───────────────────────────────────────────────────
+Metrics/MethodLength:
+  Max: 15
+
+Metrics/ClassLength:
+  Max: 150
+
+Metrics/AbcSize:
+  Max: 20
+
+Metrics/CyclomaticComplexity:
+  Max: 7
+
+# ── Rails ─────────────────────────────────────────────────────
+Rails/Validation:
+  Enabled: true
+
+Rails/HasAndBelongsToMany:
+  Enabled: true
+
+Rails/TimeZone:
+  Enabled: true
+
+Rails/Output:
+  Enabled: true
+
+# ── Performance ───────────────────────────────────────────────
+Performance/CollectionLiteralInLoop:
+  Enabled: true
+
+Performance/FlatMap:
+  Enabled: true
+
+Performance/MapCompact:
+  Enabled: true

@@ -1,0 +1,27 @@
+{
+  "name": "mortgage_api",
+  "dockerComposeFile": [
+    "../docker-compose.yml",
+    "../docker-compose.devcontainer.yml"
+  ],
+  "service": "web",
+  "workspaceFolder": "/rails",
+  "remoteUser": "root",
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "castwide.solargraph",
+        "rubocop.vscode-rubocop"
+      ],
+      "settings": {
+        "[ruby]": {
+          "editor.defaultFormatter": "rubocop.vscode-rubocop",
+          "editor.formatOnSave": true
+        },
+        "solargraph.useBundler": true,
+        "solargraph.formatting": true
+      }
+    }
+  },
+  "postCreateCommand": "bundle exec solargraph clear || true"
+}
