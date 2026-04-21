@@ -21,4 +21,5 @@ services:
       - db
     environment:
       DATABASE_URL: postgres://postgres:password@db:5432/mortgage_api_development
+      TEST_DATABASE_URL: postgres://postgres:password@db:5432/mortgage_api_test
       RAILS_ENV: development
