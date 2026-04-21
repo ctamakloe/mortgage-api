@@ -1,6 +1,8 @@
 require "rails_helper"
 
 RSpec.describe "MortgageApplications", type: :request do
+  include ActiveJob::TestHelper
+
   describe "POST /api/v1/mortgage_applications" do
     let(:valid_params) do
       {
@@ -14,16 +16,22 @@ RSpec.describe "MortgageApplications", type: :request do
       }
     end
 
-    it "creates an application and returns assessment" do
-      post "/api/v1/mortgage_applications", params: valid_params
+    it "creates an application and computes assessment asynchronously" do
+      perform_enqueued_jobs do
+        post "/api/v1/mortgage_applications", params: valid_params
+      end
 
       expect(response).to have_http_status(:created)
 
       json = response.parsed_body
+      application = MortgageApplication.find(json["id"])
+      assessment = application.latest_assessment
 
-      expect(json["decision"]).to eq("approved")
-      expect(json["metrics"]).to be_present
-      expect(json["failures"]).to eq([])
+      expect(assessment).to be_present
+      expect(assessment.decision).to eq("approved")
+      expect(assessment.metrics).to be_present
+      expect(assessment.failures).to eq([])
+      expect(assessment.version).to eq(1)
     end
 
     it "returns validation errors for invalid input" do
@@ -49,7 +57,18 @@ RSpec.describe "MortgageApplications", type: :request do
       )
     end
 
-    it "returns the application with assessment" do
+    let!(:assessment) do
+      application.assessments.create!(
+        decision: "approved",
+        metrics: { "ltv" => 0.8 },
+        failures: [],
+        explanation: "Within acceptable thresholds",
+        version: 1,
+        computed_at: Time.current,
+      )
+    end
+
+    it "returns the application with latest assessment" do
       get "/api/v1/mortgage_applications/#{application.id}"
 
       expect(response).to have_http_status(:ok)
@@ -58,6 +77,9 @@ RSpec.describe "MortgageApplications", type: :request do
 
       expect(json["id"]).to eq(application.id)
       expect(json["decision"]).to eq("approved")
+      expect(json["metrics"]).to be_present
+      expect(json["failures"]).to eq([])
+      expect(json["version"]).to eq(1)
     end
   end
 end

@@ -12,11 +12,21 @@ class MortgageApplication < ApplicationRecord
 
   validate :deposit_less_than_property_value
 
+  has_many :assessments, dependent: :nullify
+
   def deposit_less_than_property_value
     return if deposit.blank? || property_value.blank?
 
     return unless deposit >= property_value
 
     errors.add(:deposit, "must be less than property value")
+  end
+
+  def latest_assessment
+    assessments.order(computed_at: :desc).first
+  end
+
+  def next_assessment_version
+    (assessments.maximum(:version) || 0) + 1
   end
 end

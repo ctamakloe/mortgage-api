@@ -3,17 +3,27 @@ module Api
     class MortgageApplicationsController < Api::BaseController
       def show
         application = MortgageApplication.find(params[:id])
+        assessment = application.latest_assessment
 
-        # Assessment is computed on read to ensure consistency.
-        # Could be persisted if computation becomes expensive.
-        render json: assessment_response(application)
+        render json: {
+          id: application.id,
+          decision: assessment&.decision,
+          metrics: assessment&.metrics,
+          failures: assessment&.failures,
+          explanation: assessment&.explanation,
+          version: assessment&.version,
+          computed_at: assessment&.computed_at,
+        }
       end
 
       def create
         application = MortgageApplication.create(application_params)
 
         if application.persisted?
-          render json: assessment_response(application), status: :created
+          ComputeAssessmentJob.perform_later(application.id)
+
+          render json: { id: application.id, status: "processing" },
+                 status: :created
         else
           render json: { errors: application.errors.full_messages }, status: :unprocessable_content
         end
