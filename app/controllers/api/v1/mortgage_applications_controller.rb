@@ -11,6 +11,7 @@ module Api
           deposit: application.deposit.to_f,
           property_value: application.property_value.to_f,
           term_years: application.term_years,
+          status: application.status,
         }
       end
 
@@ -20,7 +21,7 @@ module Api
         if application.persisted?
           ComputeAssessmentJob.perform_later(application.id)
 
-          render json: { id: application.public_id, status: "processing" },
+          render json: { id: application.public_id, status: application.status },
                  status: :created
         else
           render json: { errors: application.errors.full_messages }, status: :unprocessable_content

@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_04_22_024239) do
+ActiveRecord::Schema[8.1].define(version: 2026_04_22_074746) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -66,9 +66,11 @@ ActiveRecord::Schema[8.1].define(version: 2026_04_22_024239) do
     t.decimal "monthly_expenses", precision: 12, scale: 2
     t.decimal "property_value", precision: 12, scale: 2
     t.uuid "public_id", default: -> { "gen_random_uuid()" }, null: false
+    t.string "status", default: "processing", null: false
     t.integer "term_years"
     t.datetime "updated_at", null: false
     t.index ["public_id"], name: "index_mortgage_applications_on_public_id", unique: true
+    t.index ["status"], name: "index_mortgage_applications_on_status"
   end
 
   add_foreign_key "api_requests", "api_clients"

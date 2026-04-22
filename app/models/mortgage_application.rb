@@ -1,4 +1,6 @@
 class MortgageApplication < ApplicationRecord
+  STATUSES = %w[processing completed failed].freeze
+
   before_validation :set_public_id, on: :create
 
   validates :public_id, presence: true, uniqueness: true
@@ -16,7 +18,9 @@ class MortgageApplication < ApplicationRecord
 
   validate :deposit_less_than_property_value
 
-  has_many :assessments, dependent: :nullify
+  validates :status, inclusion: { in: STATUSES }
+
+  has_many :assessments, dependent: :restrict_with_exception
 
   def deposit_less_than_property_value
     return if deposit.blank? || property_value.blank?
@@ -34,9 +38,17 @@ class MortgageApplication < ApplicationRecord
     (assessments.maximum(:version) || 0) + 1
   end
 
+  def mark_completed!
+    update!(status: "completed")
+  end
+
+  def mark_failed!
+    update!(status: "failed")
+  end
+
   private
 
   def set_public_id
-    self.public_id = SecureRandom.uuid
+    self.public_id ||= SecureRandom.uuid
   end
 end
