@@ -10,9 +10,29 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_04_21_211825) do
+ActiveRecord::Schema[8.1].define(version: 2026_04_22_024239) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
+
+  create_table "api_clients", force: :cascade do |t|
+    t.boolean "active", default: true, null: false
+    t.string "api_key_digest", null: false
+    t.datetime "created_at", null: false
+    t.string "name", null: false
+    t.datetime "updated_at", null: false
+    t.index ["api_key_digest"], name: "index_api_clients_on_api_key_digest", unique: true
+  end
+
+  create_table "api_requests", force: :cascade do |t|
+    t.bigint "api_client_id"
+    t.datetime "created_at", null: false
+    t.jsonb "metadata", default: {}
+    t.string "method", null: false
+    t.string "path", null: false
+    t.integer "status", null: false
+    t.datetime "updated_at", null: false
+    t.index ["api_client_id"], name: "index_api_requests_on_api_client_id"
+  end
 
   create_table "assessment_events", force: :cascade do |t|
     t.bigint "assessment_id", null: false
@@ -45,10 +65,13 @@ ActiveRecord::Schema[8.1].define(version: 2026_04_21_211825) do
     t.decimal "deposit", precision: 12, scale: 2
     t.decimal "monthly_expenses", precision: 12, scale: 2
     t.decimal "property_value", precision: 12, scale: 2
+    t.uuid "public_id", default: -> { "gen_random_uuid()" }, null: false
     t.integer "term_years"
     t.datetime "updated_at", null: false
+    t.index ["public_id"], name: "index_mortgage_applications_on_public_id", unique: true
   end
 
+  add_foreign_key "api_requests", "api_clients"
   add_foreign_key "assessment_events", "assessments"
   add_foreign_key "assessments", "mortgage_applications"
 end

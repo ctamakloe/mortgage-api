@@ -3,7 +3,10 @@ Rails.application.routes.draw do
 
   namespace :api do
     namespace :v1 do
-      resources :mortgage_applications, only: [:create, :show]
+      resources :mortgage_applications do
+        resource :assessment, only: [:show]
+        resources :assessments, only: [:index]
+      end
     end
   end
 end

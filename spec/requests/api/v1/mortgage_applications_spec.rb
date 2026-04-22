@@ -3,6 +3,28 @@ require "rails_helper"
 RSpec.describe "MortgageApplications", type: :request do
   include ActiveJob::TestHelper
 
+  let!(:client_and_key) do
+    raw = SecureRandom.hex(32)
+    [
+      ApiClient.create!(
+        name: "Test Client",
+        api_key_digest: ApiClient.digest(raw),
+      ),
+      raw,
+    ]
+  end
+
+  let(:client) { client_and_key[0] }
+  let(:raw_key) { client_and_key[1] }
+
+  let(:headers) do
+    {
+      "ACCEPT" => "application/json",
+      "CONTENT_TYPE" => "application/json",
+      "Authorization" => "Bearer #{raw_key}",
+    }
+  end
+
   describe "POST /api/v1/mortgage_applications" do
     let(:valid_params) do
       {
@@ -18,13 +40,14 @@ RSpec.describe "MortgageApplications", type: :request do
 
     it "creates an application and computes assessment asynchronously" do
       perform_enqueued_jobs do
-        post "/api/v1/mortgage_applications", params: valid_params
+        post "/api/v1/mortgage_applications", params: valid_params.to_json,
+                                              headers: headers
       end
 
       expect(response).to have_http_status(:created)
 
       json = response.parsed_body
-      application = MortgageApplication.find(json["id"])
+      application = MortgageApplication.find_by!(public_id: json["id"])
       assessment = application.latest_assessment
 
       expect(assessment).to be_present
@@ -35,14 +58,21 @@ RSpec.describe "MortgageApplications", type: :request do
     end
 
     it "returns validation errors for invalid input" do
-      post "/api/v1/mortgage_applications", params: {
-        mortgage_application: { annual_income: nil },
-      }
+      post "/api/v1/mortgage_applications",
+           params: { mortgage_application: { annual_income: nil } }.to_json,
+           headers: headers
 
       expect(response).to have_http_status(:unprocessable_content)
 
       json = response.parsed_body
       expect(json["errors"]).to be_present
+    end
+
+    it "logs the request" do
+      expect do
+        post "/api/v1/mortgage_applications", params: valid_params.to_json,
+                                              headers: headers
+      end.to change(ApiRequest, :count).by(1)
     end
   end
 
@@ -68,18 +98,25 @@ RSpec.describe "MortgageApplications", type: :request do
       )
     end
 
-    it "returns the application with latest assessment" do
-      get "/api/v1/mortgage_applications/#{application.id}"
+    it "returns the application" do
+      get "/api/v1/mortgage_applications/#{application.public_id}", headers: headers
 
       expect(response).to have_http_status(:ok)
 
       json = response.parsed_body
 
-      expect(json["id"]).to eq(application.id)
-      expect(json["decision"]).to eq("approved")
-      expect(json["metrics"]).to be_present
-      expect(json["failures"]).to eq([])
-      expect(json["version"]).to eq(1)
+      expect(json["id"]).to eq(application.public_id)
+      expect(json["annual_income"]).to eq(80_000)
+      expect(json["monthly_expenses"]).to eq(1_500)
+      expect(json["deposit"]).to eq(50_000)
+      expect(json["property_value"]).to eq(250_000)
+      expect(json["term_years"]).to eq(25)
+
+      # Ensure assessment is NOT included anymore
+      expect(json).not_to have_key("decision")
+      expect(json).not_to have_key("metrics")
+      expect(json).not_to have_key("failures")
+      expect(json).not_to have_key("version")
     end
   end
 end

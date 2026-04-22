@@ -1,4 +1,8 @@
 class MortgageApplication < ApplicationRecord
+  before_validation :set_public_id, on: :create
+
+  validates :public_id, presence: true, uniqueness: true
+
   validates :annual_income, :monthly_expenses,
             :deposit, :property_value, :term_years,
             presence: true
@@ -28,5 +32,11 @@ class MortgageApplication < ApplicationRecord
 
   def next_assessment_version
     (assessments.maximum(:version) || 0) + 1
+  end
+
+  private
+
+  def set_public_id
+    self.public_id = SecureRandom.uuid
   end
 end
