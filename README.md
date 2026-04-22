@@ -70,7 +70,7 @@ Authorization: Bearer <api_key>
 ### Create a test API key
 
 ```bash
-docker-compose exec web rails console
+docker-compose exec web bin/rails console
 ```
 
 ```ruby
@@ -128,7 +128,7 @@ The assessment is computed asynchronously. Use the `/assessment` endpoint to ret
 GET /api/v1/mortgage_applications/:id
 ```
 
-Returns application details (no assessment data).
+Returns application details (including current processing status).
 
 ### Get Latest Assessment
 
@@ -138,6 +138,8 @@ GET /api/v1/mortgage_applications/:id/assessment
 
 - 200 OK — assessment available
 - 202 Accepted — still processing
+
+If processing fails, the returned assessment will contain a "failed" decision with failure details.
 
 ### Get Assessment History
 
@@ -164,6 +166,8 @@ Assessments are computed via background jobs to:
 
 - keep API responsive
 - simulate real-world processing pipelines
+
+Jobs are retried automatically on failure (up to 3 attempts) before being marked as failed.
 
 ### Versioned Assessments
 
@@ -261,3 +265,4 @@ curl http://localhost:3000/api/v1/mortgage_applications/<id>/assessment \
 
 - Designed as a production-style API with clear separation of concerns
 - Focused on correctness, observability, and extensibility
+
