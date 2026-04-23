@@ -4,9 +4,7 @@ module Api
       def index
         application = MortgageApplication.find_by!(public_id: params[:mortgage_application_id])
 
-        assessments = application.assessments
-                                 .order(version: :desc)
-                                 .limit(10)
+        assessments = application.assessments.limit(10)
 
         render json: assessments.map { |a| serialize(a) }
       end

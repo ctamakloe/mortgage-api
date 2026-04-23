@@ -20,7 +20,7 @@ class MortgageApplication < ApplicationRecord
 
   validates :status, inclusion: { in: STATUSES }
 
-  has_many :assessments, dependent: :restrict_with_exception
+  has_many :assessments, -> { order(version: :desc) }, dependent: :restrict_with_exception
 
   def deposit_less_than_property_value
     return if deposit.blank? || property_value.blank?
@@ -31,7 +31,7 @@ class MortgageApplication < ApplicationRecord
   end
 
   def latest_assessment
-    assessments.order(computed_at: :desc).first
+    assessments.first
   end
 
   def next_assessment_version

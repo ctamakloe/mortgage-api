@@ -62,6 +62,62 @@ RSpec.describe "Assessments API", type: :request do
       end
     end
 
+    context "when multiple assessments exist" do
+      let!(:assessment_v1) do
+        application.assessments.create!(
+          decision: "approved",
+          metrics: {},
+          failures: [],
+          explanation: "v1",
+          version: 1,
+          computed_at: 2.days.ago,
+        )
+      end
+
+      let!(:assessment_v2) do
+        application.assessments.create!(
+          decision: "approved",
+          metrics: {},
+          failures: [],
+          explanation: "v2",
+          version: 2,
+          computed_at: 1.day.ago,
+        )
+      end
+
+      let!(:assessment_v3) do
+        application.assessments.create!(
+          decision: "declined",
+          metrics: {},
+          failures: ["risk"],
+          explanation: "v3",
+          version: 3,
+          computed_at: Time.current,
+        )
+      end
+
+      it "returns the highest version (latest)" do
+        get "/api/v1/mortgage_applications/#{application.public_id}/assessment",
+            headers: headers
+
+        json = response.parsed_body
+
+        expect(json["version"]).to eq(3)
+      end
+
+      it "is independent of computed_at ordering" do
+        # break timestamp ordering deliberately
+        assessment_v1.update!(computed_at: 1.day.from_now)
+
+        get "/api/v1/mortgage_applications/#{application.public_id}/assessment",
+            headers: headers
+
+        json = response.parsed_body
+
+        expect(json["version"]).to eq(3)
+      end
+    end
+
     context "when assessment is still processing" do
       it "returns processing status" do
         get "/api/v1/mortgage_applications/#{application.public_id}/assessment",
@@ -98,7 +154,7 @@ RSpec.describe "Assessments API", type: :request do
       )
     end
 
-    it "returns all assessments ordered by latest first" do
+    it "returns all assessments ordered by version descending" do
       get "/api/v1/mortgage_applications/#{application.public_id}/assessments",
           headers: headers
 
@@ -107,8 +163,7 @@ RSpec.describe "Assessments API", type: :request do
       json = response.parsed_body
 
       expect(json.length).to eq(2)
-      expect(json.first["version"]).to eq(2)
-      expect(json.second["version"]).to eq(1)
+      expect(json.map { |a| a["version"] }).to eq([2, 1])
     end
 
     it "returns expected fields" do
@@ -142,6 +197,71 @@ RSpec.describe "Assessments API", type: :request do
         get "/api/v1/mortgage_applications/#{application.public_id}/assessments",
             headers: headers
       end.to change(ApiRequest, :count).by(1)
+    end
+
+    context "when many assessments exist" do
+      before do
+        (3..15).each do |v|
+          application.assessments.create!(
+            decision: "approved",
+            metrics: {},
+            failures: [],
+            explanation: "extra",
+            version: v,
+            computed_at: Time.current,
+          )
+        end
+      end
+
+      it "limits results to 10 and keeps correct ordering" do
+        get "/api/v1/mortgage_applications/#{application.public_id}/assessments",
+            headers: headers
+
+        json = response.parsed_body
+
+        expect(json.length).to eq(10)
+
+        versions = json.map { |a| a["version"] }
+        expect(versions).to eq(versions.sort.reverse)
+      end
+    end
+  end
+
+  describe "consistency between endpoints" do
+    let!(:assessment_v1) do
+      application.assessments.create!(
+        decision: "approved",
+        metrics: {},
+        failures: [],
+        explanation: "v1",
+        version: 1,
+        computed_at: 1.day.ago,
+      )
+    end
+
+    let!(:assessment_v2) do
+      application.assessments.create!(
+        decision: "declined",
+        metrics: {},
+        failures: [],
+        explanation: "v2",
+        version: 2,
+        computed_at: Time.current,
+      )
+    end
+
+    it "ensures /assessment matches first item of /assessments" do
+      get "/api/v1/mortgage_applications/#{application.public_id}/assessments",
+          headers: headers
+
+      index_json = response.parsed_body
+
+      get "/api/v1/mortgage_applications/#{application.public_id}/assessment",
+          headers: headers
+
+      show_json = response.parsed_body
+
+      expect(show_json["version"]).to eq(index_json.first["version"])
     end
   end
 end
